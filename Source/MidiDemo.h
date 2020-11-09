@@ -134,11 +134,53 @@ public:
         updateDeviceList (false);
     }
 
-    void handleNoteOn (MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity) override
+    void handleNoteOn(MidiKeyboardState *, int midiChannel, int midiNoteNumber, float velocity) override
     {
+#if 0
         MidiMessage m (MidiMessage::noteOn (midiChannel, midiNoteNumber, velocity));
         m.setTimeStamp (Time::getMillisecondCounterHiRes() * 0.001);
         sendToOutputs (m);
+#else
+        switch (++i)
+        {
+        case 0:
+        case 1:
+        case 2:
+        {
+            DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request system info");
+            //get sys info  f0    2d    7c    08    00    40    40    40    00    00    02    44    03    00    f7
+            MidiMessage m(0xf0, 0x2d, 0x7c, 0x08, 0x00, 0x40, 0x40, 0x40, 0x00, 0x00, 0x02, 0x44, 0x03, 0x00, 0xf7);
+            m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
+            sendToOutputs(m);
+            break;
+        }
+        case 3:
+        case 4:
+        case 5:
+        {
+            DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request active mode");
+            //get cur mode  f0    2d    7c    38    00    40    40    40    00    00    06    40    6d    04    f7
+            MidiMessage m(0xf0, 0x2d, 0x7c, 0x38, 0x00, 0x40, 0x40, 0x40, 0x00, 0x00, 0x06, 0x40, 0x6d, 0x04, 0xf7);
+            m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
+            sendToOutputs(m);
+            break;
+        }
+        case 6:
+        case 7:
+        case 8:
+        {
+            DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request tuning");
+            //f0    2d    7c    08    00    40    40    40    01    00    14    58    03    0e    f7
+            MidiMessage m(0xf0, 0x2d, 0x7c, 0x08, 0x00, 0x40, 0x40, 0x40, 0x01, 0x00, 0x14, 0x58, 0x03, 0x0e, 0xf7);
+            m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
+            sendToOutputs(m);
+            break;
+        }
+        };
+
+        if (i == 8)
+            i = -1;
+#endif
     }
 
     void handleNoteOff (MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity) override
