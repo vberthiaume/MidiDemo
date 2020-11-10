@@ -74,7 +74,13 @@ public:
     MidiDemo()
         : midiKeyboard       (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
           midiInputSelector  (new MidiDeviceListBox ("Midi Input Selector",  *this, true)),
-          midiOutputSelector (new MidiDeviceListBox ("Midi Output Selector", *this, false))
+          midiOutputSelector (new MidiDeviceListBox ("Midi Output Selector", *this, false)),
+          midiSpamTimer ([this] ()
+              {
+                  MidiMessage m (MidiMessage::noteOn (1, 60, 1.f));
+                  m.setTimeStamp (Time::getMillisecondCounterHiRes () * 0.001);
+                  sendToOutputs (m);
+              })
     {
         addLabelAndSetStyle (midiInputLabel);
         addLabelAndSetStyle (midiOutputLabel);
@@ -114,6 +120,7 @@ public:
         setSize (732, 520);
 
         startTimer (500);
+        midiSpamTimer.startTimer (5);
     }
 
     ~MidiDemo() override
@@ -387,6 +394,19 @@ private:
         SparseSet<int> lastSelectedItems;
     };
 
+    struct MidiSpamTimer : public Timer
+    {
+        MidiSpamTimer (std::function<void ()> theCallback) : callback (theCallback) {}
+
+        void timerCallback () override
+        {
+            if (callback != nullptr)
+                callback ();
+        }
+
+        std::function<void ()> callback = nullptr;
+    };
+
     //==============================================================================
     void handleIncomingMidiMessage (MidiInput* /*source*/, const MidiMessage& message) override
     {
@@ -531,6 +551,8 @@ private:
 
     CriticalSection midiMonitorLock;
     Array<MidiMessage> incomingMessages;
+
+    MidiSpamTimer midiSpamTimer;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiDemo)
