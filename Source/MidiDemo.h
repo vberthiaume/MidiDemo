@@ -74,13 +74,7 @@ public:
     MidiDemo()
         : midiKeyboard       (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
           midiInputSelector  (new MidiDeviceListBox ("Midi Input Selector",  *this, true)),
-          midiOutputSelector (new MidiDeviceListBox ("Midi Output Selector", *this, false)),
-          midiSpamTimer ([this] ()
-              {
-                  MidiMessage m (MidiMessage::noteOn (1, 60, 1.f));
-                  m.setTimeStamp (Time::getMillisecondCounterHiRes () * 0.001);
-                  sendToOutputs (m);
-              })
+          midiOutputSelector (new MidiDeviceListBox ("Midi Output Selector", *this, false))
     {
         addLabelAndSetStyle (midiInputLabel);
         addLabelAndSetStyle (midiOutputLabel);
@@ -120,7 +114,6 @@ public:
         setSize (732, 520);
 
         startTimer (500);
-        midiSpamTimer.startTimer (5);
     }
 
     ~MidiDemo() override
@@ -141,65 +134,11 @@ public:
         updateDeviceList (false);
     }
 
-    int i = -1;
-
-    void handleNoteOn(MidiKeyboardState *, int midiChannel, int midiNoteNumber, float velocity) override
+    void handleNoteOn (MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity) override
     {
-#if 1
         MidiMessage m (MidiMessage::noteOn (midiChannel, midiNoteNumber, velocity));
         m.setTimeStamp (Time::getMillisecondCounterHiRes() * 0.001);
         sendToOutputs (m);
-#else
-        switch (++i)
-        {
-            case 0:
-            case 1:
-            case 2:
-            {
-                DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request system info");
-                //get sys info  f0    2d    7c    08    00    40    40    40    00    00    02    44    03    00    f7
-                MidiMessage m(0xf0, 0x2d, 0x7c, 0x08, 0x00, 0x40, 0x40, 0x40, 0x00, 0x00, 0x02, 0x44, 0x03, 0x00, 0xf7);
-                m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
-                sendToOutputs(m);
-                break;
-            }
-            case 3:
-            case 4:
-            case 5:
-            {
-                DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request active mode");
-                //get cur mode  f0    2d    7c    38    00    40    40    40    00    00    06    40    6d    04    f7
-                MidiMessage m(0xf0, 0x2d, 0x7c, 0x38, 0x00, 0x40, 0x40, 0x40, 0x00, 0x00, 0x06, 0x40, 0x6d, 0x04, 0xf7);
-                m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
-                sendToOutputs(m);
-                break;
-            }
-            case 6:
-            case 7:
-            case 8:
-            {
-                DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request tuning");
-                //f0    2d    7c    08    00    40    40    40    01    00    14    58    03    0e    f7
-                MidiMessage m(0xf0, 0x2d, 0x7c, 0x08, 0x00, 0x40, 0x40, 0x40, 0x01, 0x00, 0x14, 0x58, 0x03, 0x0e, 0xf7);
-                m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
-                sendToOutputs(m);
-                break;
-            }
-            case 9:
-            case 10:
-            case 11:
-            {
-                DBG("JUCEEEEEEEEEEEEEEEEEEEEEEEEE request serial number");
-                              //f0    2d    7c    7c    01    40    40    40    00    00    0c    40    6b    0a    f7
-                MidiMessage m(0xf0, 0x2d, 0x7c, 0x7c, 0x01, 0x40, 0x40, 0x40, 0x00, 0x00, 0x0c, 0x40, 0x6b, 0x0a, 0xf7);
-                m.setTimeStamp(Time::getMillisecondCounterHiRes() * 0.001);
-                sendToOutputs(m);
-            }
-        };
-        
-        if (i == 11)
-            i = -1;
-#endif
     }
 
     void handleNoteOff (MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity) override
@@ -394,19 +333,6 @@ private:
         SparseSet<int> lastSelectedItems;
     };
 
-    struct MidiSpamTimer : public Timer
-    {
-        MidiSpamTimer (std::function<void ()> theCallback) : callback (theCallback) {}
-
-        void timerCallback () override
-        {
-            if (callback != nullptr)
-                callback ();
-        }
-
-        std::function<void ()> callback = nullptr;
-    };
-
     //==============================================================================
     void handleIncomingMidiMessage (MidiInput* /*source*/, const MidiMessage& message) override
     {
@@ -551,8 +477,6 @@ private:
 
     CriticalSection midiMonitorLock;
     Array<MidiMessage> incomingMessages;
-
-    MidiSpamTimer midiSpamTimer;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiDemo)
