@@ -354,8 +354,7 @@ private:
 
     ReferenceCountedObjectPtr<MidiDeviceListEntry> findDevice (MidiDeviceInfo device, bool isInputDevice) const
     {
-        const ReferenceCountedArray<MidiDeviceListEntry>& midiDevices = isInputDevice ? midiInputs
-                                                                                      : midiOutputs;
+        const ReferenceCountedArray<MidiDeviceListEntry>& midiDevices = isInputDevice ? midiInputs : midiOutputs;
 
         for (auto& d : midiDevices)
             if (d->deviceInfo == device)
