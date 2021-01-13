@@ -407,6 +407,9 @@ private:
         // actually update the device list
         midiDevices = newDeviceList;
 
+        if (midiDevices.size () > 0)
+            openDevice (isInputDeviceList, 0);
+
         // update the selection status of the combo-box
         if (auto* midiSelector = isInputDeviceList ? midiInputSelector.get () : midiOutputSelector.get ())
             midiSelector->syncSelectedItemsWithDeviceList (midiDevices);
