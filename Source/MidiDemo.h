@@ -61,7 +61,6 @@ struct MidiDeviceListEntry : ReferenceCountedObject
     using Ptr = ReferenceCountedObjectPtr<MidiDeviceListEntry>;
 };
 
-
 //==============================================================================
 class MidiDemo  : public Component,
                   private Timer,
@@ -273,16 +272,12 @@ private:
             if (newSelectedItems != lastSelectedItems)
             {
                 for (auto i = 0; i < lastSelectedItems.size(); ++i)
-                {
                     if (! newSelectedItems.contains (lastSelectedItems[i]))
                         parent.closeDevice (isInput, lastSelectedItems[i]);
-                }
 
                 for (auto i = 0; i < newSelectedItems.size(); ++i)
-                {
                     if (! lastSelectedItems.contains (newSelectedItems[i]))
                         parent.openDevice (isInput, newSelectedItems[i]);
-                }
 
                 lastSelectedItems = newSelectedItems;
             }
@@ -345,8 +340,7 @@ private:
     //==============================================================================
     bool hasDeviceListChanged (const Array<MidiDeviceInfo>& availableDevices, bool isInputDevice)
     {
-        ReferenceCountedArray<MidiDeviceListEntry>& midiDevices = isInputDevice ? midiInputs
-                                                                                : midiOutputs;
+        ReferenceCountedArray<MidiDeviceListEntry>& midiDevices = isInputDevice ? midiInputs : midiOutputs;
 
         if (availableDevices.size() != midiDevices.size())
             return true;
@@ -380,7 +374,7 @@ private:
 
             if (! currentlyPluggedInDevices.contains (d.deviceInfo))
             {
-                if (isInputDevice ? d.inDevice .get() != nullptr : d.outDevice.get() != nullptr)
+                if (isInputDevice ? d.inDevice.get() != nullptr : d.outDevice.get() != nullptr)
                     closeDevice (isInputDevice, i);
 
                 midiDevices.remove (i);
@@ -390,34 +384,33 @@ private:
 
     void updateDeviceList (bool isInputDeviceList)
     {
-        auto availableDevices = isInputDeviceList ? MidiInput::getAvailableDevices() : MidiOutput::getAvailableDevices();
+        auto availableDevices = isInputDeviceList ? MidiInput::getAvailableDevices () : MidiOutput::getAvailableDevices ();
 
-        if (hasDeviceListChanged (availableDevices, isInputDeviceList))
+        if (! hasDeviceListChanged (availableDevices, isInputDeviceList))
+            return;
+
+        ReferenceCountedArray<MidiDeviceListEntry>& midiDevices = isInputDeviceList ? midiInputs : midiOutputs;
+        closeUnpluggedDevices (availableDevices, isInputDeviceList);
+
+        ReferenceCountedArray<MidiDeviceListEntry> newDeviceList;
+
+        // add all currently plugged-in devices to the device list
+        for (auto& newDevice : availableDevices)
         {
-            ReferenceCountedArray<MidiDeviceListEntry>& midiDevices = isInputDeviceList ? midiInputs : midiOutputs;
+            MidiDeviceListEntry::Ptr entry = findDevice (newDevice, isInputDeviceList);
 
-            closeUnpluggedDevices (availableDevices, isInputDeviceList);
+            if (entry == nullptr)
+                entry = new MidiDeviceListEntry (newDevice);
 
-            ReferenceCountedArray<MidiDeviceListEntry> newDeviceList;
-
-            // add all currently plugged-in devices to the device list
-            for (auto& newDevice : availableDevices)
-            {
-                MidiDeviceListEntry::Ptr entry = findDevice (newDevice, isInputDeviceList);
-
-                if (entry == nullptr)
-                    entry = new MidiDeviceListEntry (newDevice);
-
-                newDeviceList.add (entry);
-            }
-
-            // actually update the device list
-            midiDevices = newDeviceList;
-
-            // update the selection status of the combo-box
-            if (auto* midiSelector = isInputDeviceList ? midiInputSelector.get() : midiOutputSelector.get())
-                midiSelector->syncSelectedItemsWithDeviceList (midiDevices);
+            newDeviceList.add (entry);
         }
+
+        // actually update the device list
+        midiDevices = newDeviceList;
+
+        // update the selection status of the combo-box
+        if (auto* midiSelector = isInputDeviceList ? midiInputSelector.get () : midiOutputSelector.get ())
+            midiSelector->syncSelectedItemsWithDeviceList (midiDevices);
     }
 
     //==============================================================================
